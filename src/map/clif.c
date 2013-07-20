@@ -4462,6 +4462,13 @@ int clif_calc_walkdelay(struct block_list *bl,int delay, int type, int damage, i
 	if (div_ > 1) //Multi-hit skills mean higher delays.
 		delay += battle_config.multihit_delay*(div_-1);
 
+	if( bl->type == BL_PC )
+	{
+		struct map_session_data *sd = (struct map_session_data *)bl;
+		if (delay)
+			sd->hit_tick = iTimer->gettick();
+	}
+
 	return delay>0?delay:1; //Return 1 to specify there should be no noticeable delay, but you should stop walking.
 }
 

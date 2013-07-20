@@ -13953,6 +13953,84 @@ int skill_vfcastfix (struct block_list *bl, double time, uint16 skill_id, uint16
 }
 #endif
 
+static int skill_min_delay(struct map_session_data *sd, int skill_id)
+{
+	int min = battle_config.min_skill_delay_limit ? battle_config.min_skill_delay_limit : 100; //the 100 is arbitrarily chosen, most likely this doesn't matter
+	int minimum_min = min; //need better names son..
+	unsigned int time = iTimer->gettick();
+	bool listed = false;
+
+
+	switch(skill_id) {
+		case AL_HEAL:
+		case MG_FIREBOLT:
+		case MG_COLDBOLT:
+		case MG_LIGHTNINGBOLT:
+		case MG_SOULSTRIKE:
+		case WZ_EARTHSPIKE: 
+		case WZ_JUPITEL:
+		case AS_GRIMTOOTH:
+		case CR_SHIELDCHARGE:
+		case CR_SHIELDBOOMERANG:
+		case PA_SHIELDCHAIN:
+		case SN_FALCONASSAULT:
+		case WS_CARTTERMINATION:
+			listed = true;
+			min = 192;
+			break;
+
+		case SM_BASH:
+		case PA_PRESSURE:
+		case AC_DOUBLE:
+		case SN_SHARPSHOOTING:
+		case NJ_HYOUSENSOU:
+		case NJ_KAMAITACHI:
+		case NJ_BAKUENRYU:
+			listed = true;
+			min = 224;
+			break;
+		case CR_DEVOTION:
+		case SA_DISPELL:
+		case AL_BLESSING:
+			listed = true;
+			min = 312;
+			break;
+		case AC_SHOWER:
+			listed = true;
+			min = 384;
+			break;
+		case HW_GANBANTEIN:
+		case SA_LANDPROTECTOR:
+			listed = true;
+			min = 480;
+			break;
+		case WZ_HEAVENDRIVE:
+			listed = true;
+			min = 512;
+			break;
+		case PR_STRECOVERY:
+		case PR_LEXAETERNA:
+		case HT_DETECTING:
+		case SL_KAUPE:
+		case SL_KAITE:
+			listed = true;
+			min = 544;
+			break;
+	}
+
+
+
+	if ( min > minimum_min && DIFF_TICK(time, sd->hit_tick) < minimum_min*3 ) // that is, you've been hit between now and ~300 ms ago
+		min = minimum_min;
+
+	if (listed) 
+		skill->blockpc_start(sd, skill_id, max(min, minimum_min), false);
+		
+	// under individual block version, we send the minimum delay; this is a global delay, and above
+	// a re-use delay is applied to the skill
+	return min(min, minimum_min);
+}
+
 /*==========================================
  * Does delay reductions based on dex/agi, sc data, item bonuses, ...
  *------------------------------------------*/
@@ -14042,6 +14120,9 @@ int skill_delay_fix (struct block_list *bl, uint16 skill_id, uint16 skill_lv)
 	//min delay
 	time = max(time, status_get_amotion(bl)); // Delay can never be below amotion [Playtester]
 	time = max(time, battle_config.min_skill_delay_limit);
+
+	if (sd)
+		time = max(time, skill->min_delay(sd, skill_id));
 
 //        ShowInfo("Delay delayfix = %d\n",time);
 	return time;
@@ -18181,6 +18262,7 @@ void skill_defaults(void) {
 #ifdef RENEWAL_CAST
 	skill->vf_cast_fix = skill_vfcastfix;
 #endif
+	skill->min_delay = skill_min_delay;
 	skill->delay_fix = skill_delay_fix;
 	skill->check_condition_castbegin = skill_check_condition_castbegin;
 	skill->check_condition_castend = skill_check_condition_castend;

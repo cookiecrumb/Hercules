@@ -1832,6 +1832,7 @@ struct skill_interface {
 #ifdef RENEWAL_CAST
 	int (*vf_cast_fix) ( struct block_list *bl, double time, uint16 skill_id, uint16 skill_lv);
 #endif
+	int (*min_delay) ( struct map_session_data *sd, int skill_id );
 	int (*delay_fix) ( struct block_list *bl, uint16 skill_id, uint16 skill_lv);
 	int (*check_condition_castbegin) (struct map_session_data *sd, uint16 skill_id, uint16 skill_lv);
 	int (*check_condition_castend) (struct map_session_data *sd, uint16 skill_id, uint16 skill_lv);
